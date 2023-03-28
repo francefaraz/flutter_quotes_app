@@ -184,6 +184,8 @@ class _MainPageState extends State<MainPage> {
   }
   copyQuote(){
     FlutterClipboard.copy(quote+"\n-"+owner).then((result){
+      ToastContext().init(context);
+
       Toast.show("Quote Copied",duration:Toast.lengthLong);
     });
   }
@@ -193,7 +195,7 @@ class _MainPageState extends State<MainPage> {
     String path =
         '$directory/screenshots${DateTime.now().toIso8601String()}.png';
     print("hello ${path}");
-    screenshotController.capture().then((_) {
+    screenshotController.captureAndSave(directory).then((_) {
       print("HERE WE HACE ${path}");
       Share.shareFiles([path], text: quote);
     }).catchError((onError) {
@@ -231,6 +233,7 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: grey,
       body: Screenshot(
