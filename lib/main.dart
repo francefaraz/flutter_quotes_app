@@ -192,16 +192,26 @@ class _MainPageState extends State<MainPage> {
 
   shareQuote() async {
     final directory = (await getApplicationDocumentsDirectory()).path; //from path_provide package
-    String path =
-        '$directory/screenshots${DateTime.now().toIso8601String()}.png';
-    print("hello ${path}");
-    screenshotController.captureAndSave(directory).then((_) {
-      print("HERE WE HACE ${path}");
-      Share.shareFiles([path], text: quote);
+    String fileName ='screenshots${DateTime.now().toIso8601String()}.png';
+    var path='$directory';
+    print("hello ${path} filename is ${fileName}");
+    screenshotController.captureAndSave(
+        path, //set path where screenshot will be saved
+        fileName:fileName
+    )
+        .then((res) {
+          print("hello ${res} filename");
+      print("HERE WE HAVE ${path}");
+      Share.shareFiles([res.toString()], text: quote);
     }).catchError((onError) {
       print("error re farazzzzzz ${onError}");
       print(onError);
     });
+    // await screenshotController.captureAndSave(
+    //     path, //set path where screenshot will be saved
+    //     fileName:fileName
+    // );
+    // await Share.shareFiles([path], text: quote);
   }
 
   getImg(String name) async {
