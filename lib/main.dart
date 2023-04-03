@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:make_urself_inspire/splash.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:http/http.dart' as http;
@@ -14,10 +16,11 @@ import 'package:toast/toast.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  MobileAds.instance.initialize();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   runApp(const MyApp());
 }
-
+const maxAttempts=3;
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -35,91 +38,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-    );
-  }
-}
-
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
 
@@ -128,6 +46,162 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
+
+
+  late BannerAd staticAd;
+  bool _isStaticAdLoaded=false;
+
+  late InterstitialAd interstitialAd;
+  bool _isInterstitialAdLoaded=false;
+  int interstitialAttempts=0;
+
+  late RewardedAd rewardedAd;
+  bool _isRewardedAdLoaded=false;
+  int rewardedAttempts=0;
+
+
+
+  final bannerAdUnitId = Platform.isAndroid
+      ? 'ca-app-pub-3940256099942544/6300978111'
+      : 'ca-app-pub-3940256099942544/2934735716';
+
+  final interstitialAdUnitId = Platform.isAndroid
+      ? 'ca-app-pub-3940256099942544/1033173712'
+      : 'ca-app-pub-3940256099942544/4411468910';
+
+  final rewardedAdUnitId = Platform.isAndroid
+      ? 'ca-app-pub-3940256099942544/5224354917'
+      : 'ca-app-pub-3940256099942544/1712485313';
+
+  void loadStaticBannerAd(){
+
+
+    staticAd=BannerAd(
+      adUnitId: bannerAdUnitId,
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+    debugPrint('$ad loaded.');
+    setState(() {
+      _isStaticAdLoaded = true;
+    });
+    },
+        onAdFailedToLoad: (ad, err) {
+          debugPrint('BannerAd failed to load: $err');
+          // Dispose the ad here to free resources.
+          ad.dispose();
+        },
+      )
+    );
+    staticAd.load();
+  }
+
+  void createInterstitialAd(){
+    InterstitialAd.load(adUnitId: interstitialAdUnitId, request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+            onAdLoaded: (ad){
+              debugPrint('$ad loaded.');
+              interstitialAd=ad;
+
+              interstitialAttempts=0;
+            },
+            onAdFailedToLoad: (error){
+              debugPrint('InterstitialAd failed to load: $error');
+                interstitialAttempts++;
+
+                if(interstitialAttempts<=maxAttempts){
+                  createInterstitialAd();
+                }
+
+
+            }));
+  }
+
+  void showInterstitialAd(){
+    if(interstitialAd==null){
+      print("trying to showInterstitial before loading");
+      return;
+    }
+    interstitialAd!.fullScreenContentCallback=FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) {
+        setState(() {
+          _isInterstitialAdLoaded = true;
+        });
+        print("ad loaded ${ad}");},
+        onAdDismissedFullScreenContent: (ad) {
+          // Dispose the ad here to free resources.
+          ad.dispose();
+          createInterstitialAd();
+        },
+        onAdFailedToShowFullScreenContent: (ad, err) {
+          // Dispose the ad here to free resources.
+          ad.dispose();
+          print("Failed to show ad:$ad error is $err");
+          createInterstitialAd();
+        },
+
+    );
+    interstitialAd!.show();
+    interstitialAd!=null;
+  }
+
+
+  //rewarded video ad show and create
+
+
+  void createRewardedAd(){
+    RewardedAd.load(adUnitId: rewardedAdUnitId, request: const AdRequest(),
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+            onAdLoaded: (ad){
+              debugPrint('$ad loaded.');
+              rewardedAd=ad;
+
+              rewardedAttempts=0;
+            },
+            onAdFailedToLoad: (error){
+              debugPrint('InterstitialAd failed to load: $error');
+              rewardedAttempts++;
+
+              if(rewardedAttempts<=maxAttempts){
+                createRewardedAd();
+              }
+
+
+            }));
+  }
+
+  void showRewardedAd(){
+    if(rewardedAd==null){
+      print("trying to show rewarded before loading");
+      return;
+    }
+    rewardedAd!.fullScreenContentCallback=FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) {
+        setState(() {
+          _isRewardedAdLoaded = true;
+        });
+        print("ad loaded ${ad}");},
+      onAdDismissedFullScreenContent: (ad) {
+        // Dispose the ad here to free resources.
+        ad.dispose();
+        createInterstitialAd();
+      },
+      onAdFailedToShowFullScreenContent: (ad, err) {
+        // Dispose the ad here to free resources.
+        ad.dispose();
+        print("Failed to show ad:$ad error is $err");
+        createRewardedAd();
+      },
+
+    );
+    rewardedAd!.show(onUserEarnedReward: (ad,reward){
+      print("rewarded is ${reward.amount} and type is ${reward.type} ");
+    });
+    rewardedAd!=null;
+  }
+
+
   late String quote,owner,imgLink;
   bool isWorking=false;
   final grey=Colors.blueGrey;
@@ -142,6 +216,9 @@ class _MainPageState extends State<MainPage> {
     owner="";
     imgLink="";
     getQuote();
+    loadStaticBannerAd();
+    createInterstitialAd();
+    createRewardedAd();
   }
   getQuote() async {
     offline(){
@@ -187,6 +264,7 @@ class _MainPageState extends State<MainPage> {
       ToastContext().init(context);
 
       Toast.show("Quote Copied",duration:Toast.lengthLong);
+      showInterstitialAd();
     });
   }
 
@@ -203,6 +281,7 @@ class _MainPageState extends State<MainPage> {
           print("hello ${res} filename");
       print("HERE WE HAVE ${path}");
       Share.shareFiles([res.toString()], text: quote);
+      showRewardedAd();
     }).catchError((onError) {
       print("error re farazzzzzz ${onError}");
       print(onError);
@@ -272,6 +351,15 @@ class _MainPageState extends State<MainPage> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
+                        if (_isStaticAdLoaded)
+                          Container(
+                          child:AdWidget(ad:staticAd,),
+                          width: staticAd!.size.width.toDouble(),
+                          height: staticAd!.size.height.toDouble(),
+                            alignment: Alignment.topCenter,
+                          ),
+
+
                         RichText(
                           textAlign: TextAlign.center,
                           text: TextSpan(
