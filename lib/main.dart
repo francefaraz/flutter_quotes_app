@@ -14,9 +14,33 @@ import 'dart:convert';
 
 import 'package:toast/toast.dart';
 
-void main() {
+AppOpenAd? appOpenAd;
+String appOpenAdUnitId = Platform.isAndroid
+    ? 'ca-app-pub-3940256099942544/3419835294'
+    : 'ca-app-pub-3940256099942544/5662855259';
+
+
+Future<void> loadAd() async{
+  await AppOpenAd.load(adUnitId:appOpenAdUnitId,
+                       request: const AdRequest(),
+                       adLoadCallback: AppOpenAdLoadCallback(
+                           onAdLoaded: (ad){
+                             print("ad is loaded");
+                             appOpenAd=ad;
+                             appOpenAd!.show();
+                           },
+                           onAdFailedToLoad: (error){
+                             print("APPOPEN ADD LOADING FAILED");
+                           }
+                       ),
+                      orientation: AppOpenAd.orientationPortrait
+  );
+
+}
+void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
+  await loadAd();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   runApp(const MyApp());
 }
@@ -185,7 +209,7 @@ class _MainPageState extends State<MainPage> {
       onAdDismissedFullScreenContent: (ad) {
         // Dispose the ad here to free resources.
         ad.dispose();
-        createInterstitialAd();
+        createRewardedAd();
       },
       onAdFailedToShowFullScreenContent: (ad, err) {
         // Dispose the ad here to free resources.
