@@ -1,6 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
-
+import 'dart:async';
+import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:make_urself_inspire/PushNotificationService.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:make_urself_inspire/splash.dart';
@@ -11,6 +16,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:share/share.dart';
 import 'dart:convert';
+// import 'package:flutter/foundation.dart' show kIsWeb;
+
 
 import 'package:toast/toast.dart';
 
@@ -37,12 +44,27 @@ Future<void> loadAd() async{
   );
 
 }
-void main() async{
+Future<void> main() async{
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
   await loadAd();
+
+  await Firebase.initializeApp();
+
+  // if (kIsWeb) {
+    // running on the web!
+    // await Firebase.initializeApp(options: defaultFirebaseOptions);
+    await PushNotificationService().setupInteractedMessage();
+  // } else {
+  //   await Firebase.initializeApp();
+  // }
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   runApp(const MyApp());
+  RemoteMessage? initialMessage =
+  await FirebaseMessaging.instance.getInitialMessage();
+  if (initialMessage != null) {
+    // App received a notification when it was killed
+  }
 }
 const maxAttempts=3;
 class MyApp extends StatelessWidget {
@@ -78,6 +100,7 @@ class _MainPageState extends State<MainPage> {
   late InterstitialAd interstitialAd;
   bool _isInterstitialAdLoaded=false;
   int interstitialAttempts=0;
+  late StreamSubscription<AppLifecycleState> _lifecycleStateSubscription;
 
   late RewardedAd rewardedAd;
   bool _isRewardedAdLoaded=false;
@@ -234,16 +257,32 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     // TODO: implement initState
     super.initState();
-
+    // _lifecycleStateSubscription = WidgetsBinding.instance.addObserver(_handleLifecycleStateChanged);
     screenshotController = ScreenshotController();
     quote="";
     owner="";
     imgLink="";
     getQuote();
+
     loadStaticBannerAd();
     createInterstitialAd();
     createRewardedAd();
   }
+
+  // Future<WidgetsBindingObserver> _handleLifecycleStateChanged(AppLifecycleState state) {
+  //   if (state == AppLifecycleState.resumed) {
+  //     createInterstitialAd();
+  //   }
+  // }
+
+  @override
+  void dispose() {
+    interstitialAd?.dispose();
+    _lifecycleStateSubscription?.cancel();
+    super.dispose();
+  }
+
+
   getQuote() async {
     offline(){
       setState(() {
@@ -448,4 +487,12 @@ class _MainPageState extends State<MainPage> {
     );
   }
 }
-
+//
+// const defaultFirebaseOptions = const FirebaseOptions(
+//     apiKey: "AIzaSyAgVwgUwwFmFseY6OFJsTuGX_d9yl_VYWA",
+//     authDomain: "shayri-app1.firebaseapp.com",
+//     projectId: "shayri-app1",
+//     storageBucket: "shayri-app1.appspot.com",
+//     messagingSenderId: "589455937017",
+//     appId: "1:589455937017:web:12958d6222e0678be78128",
+//     measurementId: "G-LG09KX2P87");

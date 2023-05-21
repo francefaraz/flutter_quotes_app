@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "463791789527",
+    "project_id": "make-urself-inspire",
+    "storage_bucket": "make-urself-inspire.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:463791789527:android:976846057289f7140fe792",
+        "android_client_info": {
+          "package_name": "com.far.makeurselfinspire.make_urself_inspire"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "463791789527-l72o2hv1evf4jurfs00k6pml3vpgoa5r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbyCEPZFPcG7X-vobt4S5B7saaVa34I5w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "463791789527-l72o2hv1evf4jurfs00k6pml3vpgoa5r.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
